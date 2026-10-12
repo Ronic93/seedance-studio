@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Seedance Studio</title><meta name="theme-color" content="#0f0d12"><link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#0f0d12;--card:#1a1720;--line:#2e2936;--gold:#d6a84f;--rust:#c2582f;--txt:#eee8f2;--mut:#9a92a6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,-apple-system,sans-serif;padding-bottom:80px}
+header{padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+h1{margin:0;font-size:19px;color:var(--gold);letter-spacing:.5px}h1 small{color:var(--mut);font-weight:400;font-size:12px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#16131b;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:9}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:12px 4px;font-size:13px}nav button.on{color:var(--gold)}
+main{padding:14px;max-width:760px;margin:auto}section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;background:#110f15;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}
+textarea{min-height:64px;resize:vertical}
+.btn{background:var(--gold);color:#1a1208;border:0;border-radius:8px;padding:10px 14px;font-weight:600;font-size:14px}
+.btn.g{background:#2a2531;color:var(--txt)}.btn.r{background:#5a2020;color:#fff}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:120px}
+.char{display:flex;gap:10px}.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.thumbs img{width:56px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.ph{width:56px;height:72px;border-radius:6px;background:linear-gradient(135deg,#3a2a1e,#1c1a2a);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+pre{white-space:pre-wrap;background:#0b0a0e;border:1px solid var(--line);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Menlo,monospace;max-height:60vh;overflow:auto}
+.beat{border-left:3px solid var(--rust);padding-left:10px;margin:10px 0}.beat b{color:var(--gold)}
+.chip{display:inline-block;padding:5px 10px;border-radius:20px;border:1px solid var(--line);margin:3px;font-size:13px}.chip.on{background:var(--gold);color:#1a1208;border-color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+.mut{color:var(--mut);font-size:12px}.big{font-size:22px;color:var(--gold);font-weight:700}.toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;padding:8px 14px;border-radius:8px;display:none;z-index:20}
+</style></head><body>
+<header><h1>SEEDANCE STUDIO <small>by Roronoa · v1</small></h1></header>
+<main>
+<section id="s-build" class="on"></section>
+<section id="s-chars"></section>
+<section id="s-board"></section>
+<section id="s-credits"></section>
+</main>
+<nav><button data-t="build" class="on">🎬 Prompt</button><button data-t="chars">🧍 Cast</button><button data-t="board">🎞 Episodes</button><button data-t="credits">💳 Credits</button></nav>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),uid=()=>Math.random().toString(36).slice(2,9),esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MODELS={mini:{name:'Seedance 2 mini',max:15,lens:[5,10,15],rate:22},s25:{name:'Seedance 2.5',max:30,lens:[5,10,15,20,25,30],rate:33}};
+const CAM=['Static','Slow push-in','Slow pull-out','Slow orbit','Orbit 180°','Dolly left','Dolly right','Crane up','Crane down','Handheld follow','Tracking shot','Whip pan','Tilt up','Tilt down','Rack focus','Dolly zoom'];
+const SHOT=['Extreme wide','Wide','Full body','Medium','Medium close-up','Close-up','Extreme close-up','Over-the-shoulder','Low angle','High angle','POV','Macro insert'];
+const SEED={chars:[
+{id:'heroine',name:'Heroine',desc:'warm-toned Black woman, mid-20s, sculpted cheekbones, natural afro, rust-orange embroidered dress that transforms into a navy velvet gown with gold embroidery',locked:'rust embroidered dress / navy velvet gold gown; natural afro; gold embroidery',imgs:[]},
+{id:'vine',name:'Vine Man',desc:'tall man, late 20s, close-cropped hair, calm intense eyes, shirt woven from living green vines and leaves',locked:'living vine shirt; calm gaze; leaves move slightly',imgs:[]},
+{id:'mirror',name:'Mirror',desc:'the heroine\'s dark twin: same face and afro, black lace gown with dull gold embroidery, cold unblinking stare, humanlike but slightly off, too-still posture',locked:'black lace gown, dull gold embroidery; cold stare, never blinks; too-still',imgs:[]}],
+style:{look:'Surreal Gucci fashion-editorial campaign, 35mm film look, soft halation',light:'cold moonlight through glass panes, warm practical lanterns',atmo:'misty moonlit Victorian greenhouse, overgrown botanical plants, drifting fog',grade:'deep teal shadows, warm amber highlights'},
+episodes:[{id:uid(),title:'Ep 1 — The Transformation',notes:'Camera glides around the heroine; rust dress becomes navy velvet gold gown.',status:'done',clips:[]},{id:uid(),title:'Ep 2 — The Meeting',notes:'Final frame of ep1 → Vine Man appears among the plants.',status:'done',clips:[]},{id:uid(),title:'Ep 3 — Mirror',notes:'Start from ep2 final frame; the dark twin Mirror steps out of the fog.',status:'planned',clips:[]}],
+clips:[{id:uid(),date:'2026-10-11',title:'Transformation',model:'s25',len:20,credits:660}],
+rates:{mini:22,s25:33},budget:0};
+let S=JSON.parse(localStorage.getItem('sds')||'null')||SEED;
+let B=JSON.parse(localStorage.getItem('sds_b')||'null')||{model:'s25',len:20,aspect:'9:16',res:'720p',music:true,cast:['heroine'],extra:'',summary:'',beats:[],ep:''};
+const save=()=>{try{localStorage.setItem('sds',JSON.stringify(S));localStorage.setItem('sds_b',JSON.stringify(B))}catch(e){toast('Storage full — use smaller images')}};
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',1600)};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,section').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#s-'+b.dataset.t).classList.add('on');R[b.dataset.t]()});
+function fitBeats(){const L=B.len,n=Math.max(1,Math.round(L/(B.model==='mini'?5:(L>20?7:5)))),step=L/n;const old=B.beats;B.beats=[];for(let i=0;i<n;i++){const a=Math.round(i*step),z=i==n-1?L:Math.round((i+1)*step);const o=old[i]||{shot:SHOT[[1,4,5,7,2][i%5]],cam:CAM[[1,3,0,4,5][i%5]],action:'',sfx:'',dlg:''};B.beats.push({...o,a,z})}}
+function imgRefs(){let n=0,out=[];B.cast.forEach(id=>{const c=S.chars.find(x=>x.id==id);if(!c)return;const k=Math.max(1,c.imgs.length);for(let i=0;i<k;i++){n++;out.push(`@Image${n}: ${c.name}. Look reference only (face, hair, wardrobe). 100% matches the reference.`)}});
+ if(B.extra.trim())B.extra.split('\n').filter(Boolean).forEach(l=>{n++;out.push(`@Image${n}: ${l.trim()}`)});return out}
+function build(){const m=MODELS[B.model],st=S.style,cast=B.cast.map(id=>S.chars.find(c=>c.id==id)).filter(Boolean);let p=`[STYLE + CAMERA + ATMOSPHERE]\n${st.look}, ${st.grade}, ${st.light}. ${st.atmo}. ${B.aspect} vertical, ${B.res}.\n`;
+ p+=`Summary: ${B.summary||(cast.map(c=>c.name).join(' and ')+' in the greenhouse')}.\n\n[IMAGE REFERENCES]\n${imgRefs().join('\n')}\n`;cast.forEach(c=>p+=`${c.name}: "${c.desc}"\n`);
+ p+=`\n[TIMELINE SECOND BY SECOND]\n`;B.beats.forEach(b=>{p+=`${b.a}–${b.z}s: ${b.shot}. ${b.action||'[action]'}. ${b.cam}.`;if(b.dlg)p+=` {${b.dlg}}`;if(b.sfx)p+=` <${b.sfx}>`;p+='\n'});
+ p+=`\n[STYLE & QUALITY BOOSTERS]\nFine film grain, natural skin and fabric textures, coherent motion, stable face and body proportions, continuous lighting direction, no on-screen text or UI elements.\nMaintain the same ${cast.map(c=>c.name+' ('+c.locked+')').join(', ')||'subject'}, color palette, greenhouse environment logic and lighting style across the full ${B.len} seconds.\n`;
+ if(B.music)p+=`NO MUSIC. Generate absolutely no musical soundtrack, melody, instruments, tonal bed, or ambient music. Only diegetic sound effects, ambience, dialogue, and foley written inside <>.\n`;p+='No subtitles.';return p}
+const opts=(a,v)=>a.map(x=>`<option ${x==v?'selected':''}>${x}</option>`).join('');
+const R={};
+R.build=()=>{const m=MODELS[B.model];if(B.len>m.max)B.len=m.max;if(B.beats.length==0||B.beats.at(-1).z!=B.len)fitBeats();const cr=Math.round(S.rates[B.model]*B.len);
+ $('#s-build').innerHTML=`<div class="card"><div class="row"><div><label>Model</label><select id="bm">${Object.entries(MODELS).map(([k,v])=>`<option value="${k}" ${k==B.model?'selected':''}>${v.name} (max ${v.max}s)</option>`)}</select></div>
+ <div><label>Length</label><select id="bl">${m.lens.map(l=>`<option ${l==B.len?'selected':''}>${l}</option>`)}</select></div></div>
+ <div class="row"><div><label>Aspect</label><select id="ba">${opts(['9:16','16:9','1:1','4:5'],B.aspect)}</select></div><div><label>Resolution</label><select id="br">${opts(['720p','1080p'],B.res)}</select></div></div>
+ <label><input type="checkbox" id="bmu" style="width:auto" ${B.music?'checked':''}> No music (add Suno later in CapCut)</label><div class="mut">≈ <b>${cr}</b> credits · edit rates in Credits tab</div></div>
+ <div class="card"><label>Cast (order = @Image order)</label>${S.chars.map(c=>`<span class="chip ${B.cast.includes(c.id)?'on':''}" data-c="${c.id}">${esc(c.name)}</span>`).join('')}
+ <label>Extra references (one per line, e.g. "final frame of Ep 2. Start frame / composition only.")</label><textarea id="bx">${esc(B.extra)}</textarea>
+ <label>Summary</label><input id="bs" value="${esc(B.summary)}" placeholder="Mirror steps out of the fog behind the heroine, surreal horror-fashion, slow orbit"></div>
+ <div class="card"><div class="row"><b style="color:var(--gold)">Timeline</b><button class="btn g" id="rb" style="flex:0">Re-split</button></div><div class="mut">Prompt behavior, not emotion. One action + one camera move per beat.</div>
+ ${B.beats.map((b,i)=>`<div class="beat"><b>${b.a}–${b.z}s</b><div class="row"><select data-i="${i}" data-k="shot">${opts(SHOT,b.shot)}</select><select data-i="${i}" data-k="cam">${opts(CAM,b.cam)}</select></div>
+ <label>Action</label><input data-i="${i}" data-k="action" value="${esc(b.action)}" placeholder="She stops; head tilts; fingers trace the glass"><div class="row"><div><label>&lt;SFX&gt;</label><input data-i="${i}" data-k="sfx" value="${esc(b.sfx)}" placeholder="glass creak, wind"></div><div><label>{Dialogue}</label><input data-i="${i}" data-k="dlg" value="${esc(b.dlg)}" placeholder='Mirror: "You kept my dress."'></div></div></div>`).join('')}</div>
+ <div class="card"><div class="row"><button class="btn" id="cp">📋 Copy prompt</button><button class="btn g" id="lg">+ Log clip (${cr} cr)</button></div><pre id="out">${esc(build())}</pre><div class="mut" id="wc"></div></div>`;
+ $('#wc').textContent=build().split(/\s+/).length+' words';
+ const re=()=>{save();R.build()};$('#bm').onchange=e=>{B.model=e.target.value;B.len=Math.min(B.len,MODELS[B.model].max);fitBeats();re()};$('#bl').onchange=e=>{B.len=+e.target.value;fitBeats();re()};
+ $('#ba').onchange=e=>{B.aspect=e.target.value;re()};$('#br').onchange=e=>{B.res=e.target.value;re()};$('#bmu').onchange=e=>{B.music=e.target.checked;re()};$('#rb').onclick=()=>{fitBeats();re()};
+ document.querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>{const id=x.dataset.c;B.cast=B.cast.includes(id)?B.cast.filter(y=>y!=id):[...B.cast,id];re()});
+ const live=()=>{$('#out').textContent=build();save()};$('#bx').oninput=e=>{B.extra=e.target.value;live()};$('#bs').oninput=e=>{B.summary=e.target.value;live()};
+ document.querySelectorAll('[data-i]').forEach(x=>x[x.tagName=='SELECT'?'onchange':'oninput']=e=>{B.beats[x.dataset.i][x.dataset.k]=e.target.value;live()});
+ $('#cp').onclick=()=>{const t=build();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied!')).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.append(a);a.select();document.execCommand('copy');a.remove();toast('Copied!')})};
+ $('#lg').onclick=()=>{const t=prompt('Clip title?',B.summary.slice(0,40)||'Clip');if(t==null)return;S.clips.unshift({id:uid(),date:new Date().toISOString().slice(0,10),title:t,model:B.model,len:B.len,credits:cr,prompt:build()});save();toast('Logged')}};
+function shrink(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,360/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.75))};im.src=fr.result};fr.readAsDataURL(file)})}
+R.chars=()=>{$('#s-chars').innerHTML=`<div class="card"><b style="color:var(--gold)">World style</b>${['look','grade','light','atmo'].map(k=>`<label>${{look:'Look',grade:'Color grade',light:'Light',atmo:'Atmosphere / location'}[k]}</label><input data-s="${k}" value="${esc(S.style[k])}">`).join('')}</div>
+ ${S.chars.map((c,i)=>`<div class="card"><div class="char">${c.imgs[0]?`<img src="${c.imgs[0]}" style="width:56px;height:72px;object-fit:cover;border-radius:6px">`:'<div class="ph">🧍</div>'}<div style="flex:1"><input data-ch="${i}" data-k="name" value="${esc(c.name)}" style="font-weight:700"></div></div>
+ <label>Descriptor (pasted verbatim into every prompt)</label><textarea data-ch="${i}" data-k="desc">${esc(c.desc)}</textarea><label>Locked traits (consistency line)</label><input data-ch="${i}" data-k="locked" value="${esc(c.locked)}">
+ <label>Reference images (each becomes an @Image)</label><div class="thumbs">${c.imgs.map((s,j)=>`<img src="${s}" data-del="${i}:${j}" title="tap to remove">`).join('')}</div>
+ <div class="row" style="margin-top:8px"><label class="btn g" style="text-align:center;margin:0">+ Add image<input type="file" accept="image/*" multiple data-up="${i}" style="display:none"></label><button class="btn r" data-rm="${i}" style="flex:0">Delete</button></div></div>`).join('')}
+ <button class="btn" id="addc">+ New character</button>`;
+ document.querySelectorAll('[data-s]').forEach(x=>x.oninput=e=>{S.style[x.dataset.s]=e.target.value;save()});
+ document.querySelectorAll('[data-ch]').forEach(x=>x.oninput=e=>{S.chars[x.dataset.ch][x.dataset.k]=e.target.value;save()});
+ document.querySelectorAll('[data-up]').forEach(x=>x.onchange=async e=>{for(const f of e.target.files)S.chars[x.dataset.up].imgs.push(await shrink(f));save();R.chars()});
+ document.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{if(!confirm('Remove image?'))return;const[i,j]=x.dataset.del.split(':');S.chars[i].imgs.splice(j,1);save();R.chars()});
+ document.querySelectorAll('[data-rm]').forEach(x=>x.onclick=()=>{if(!confirm('Delete character?'))return;S.chars.splice(x.dataset.rm,1);save();R.chars()});
+ $('#addc').onclick=()=>{S.chars.push({id:uid(),name:'New character',desc:'',locked:'',imgs:[]});save();R.chars()}};
+R.board=()=>{$('#s-board').innerHTML=S.episodes.map((e,i)=>`<div class="card"><div class="row"><input data-e="${i}" data-k="title" value="${esc(e.title)}" style="font-weight:700;flex:3"><select data-e="${i}" data-k="status">${opts(['idea','planned','prompted','generated','done'],e.status)}</select></div>
+ <label>Beat / notes (start frame, what happens, end frame)</label><textarea data-e="${i}" data-k="notes">${esc(e.notes)}</textarea>
+ ${e.prompt?`<details><summary class="mut">Saved prompt</summary><pre>${esc(e.prompt)}</pre></details>`:''}
+ <div class="row" style="margin-top:8px"><button class="btn g" data-sp="${i}">Save current prompt here</button><button class="btn g" data-up2="${i}" style="flex:0">↑</button><button class="btn r" data-de="${i}" style="flex:0">✕</button></div></div>`).join('')+`<button class="btn" id="adde">+ New episode</button>`;
+ document.querySelectorAll('[data-e]').forEach(x=>x[x.tagName=='SELECT'?'onchange':'oninput']=e=>{S.episodes[x.dataset.e][x.dataset.k]=e.target.value;save()});
+ document.querySelectorAll('[data-sp]').forEach(x=>x.onclick=()=>{S.episodes[x.dataset.sp].prompt=build();save();R.board();toast('Saved')});
+ document.querySelectorAll('[data-up2]').forEach(x=>x.onclick=()=>{const i=+x.dataset.up2;if(i){[S.episodes[i-1],S.episodes[i]]=[S.episodes[i],S.episodes[i-1]];save();R.board()}});
+ document.querySelectorAll('[data-de]').forEach(x=>x.onclick=()=>{if(confirm('Delete episode?')){S.episodes.splice(x.dataset.de,1);save();R.board()}});
+ $('#adde').onclick=()=>{S.episodes.push({id:uid(),title:'Ep '+(S.episodes.length+1),notes:'',status:'idea'});save();R.board()}};
+R.credits=()=>{const tot=S.clips.reduce((a,c)=>a+(+c.credits||0),0);$('#s-credits').innerHTML=`<div class="card"><div class="row"><div><div class="mut">Credits spent</div><div class="big">${tot}</div></div><div><div class="mut">Remaining of budget</div><div class="big">${S.budget?S.budget-tot:'—'}</div></div></div>
+ <label>Credit budget (e.g. your CapCut balance)</label><input type="number" id="bud" value="${S.budget||''}"><div class="row"><div><label>2 mini credits / sec</label><input type="number" id="rm" value="${S.rates.mini}"></div><div><label>2.5 credits / sec</label><input type="number" id="r25" value="${S.rates.s25}"></div></div><div class="mut">Default 2.5 = 33/s (20s = 660). Check the real price in CapCut and edit.</div></div>
+ <div class="card"><table><tr><th>Date</th><th>Clip</th><th>Model</th><th>Credits</th><th></th></tr>${S.clips.map((c,i)=>`<tr><td>${c.date.slice(5)}</td><td>${esc(c.title)} <span class="mut">${c.len}s</span></td><td>${c.model=='mini'?'2 mini':'2.5'}</td><td><input type="number" data-cl="${i}" value="${c.credits}" style="width:70px;padding:4px"></td><td><span data-cd="${i}">✕</span></td></tr>`).join('')}</table>
+ <button class="btn g" id="addcl" style="margin-top:8px">+ Manual entry</button></div>
+ <div class="card"><div class="row"><button class="btn g" id="exp">Export backup</button><label class="btn g" style="text-align:center;margin:0">Import<input type="file" id="imp" accept=".json" style="display:none"></label></div></div>`;
+ $('#bud').oninput=e=>{S.budget=+e.target.value;save()};$('#bud').onchange=()=>R.credits();$('#rm').onchange=e=>{S.rates.mini=+e.target.value;save()};$('#r25').onchange=e=>{S.rates.s25=+e.target.value;save()};
+ document.querySelectorAll('[data-cl]').forEach(x=>x.onchange=e=>{S.clips[x.dataset.cl].credits=+e.target.value;save();R.credits()});
+ document.querySelectorAll('[data-cd]').forEach(x=>x.onclick=()=>{if(confirm('Delete entry?')){S.clips.splice(x.dataset.cd,1);save();R.credits()}});
+ $('#addcl').onclick=()=>{S.clips.unshift({id:uid(),date:new Date().toISOString().slice(0,10),title:'Manual',model:'s25',len:20,credits:660});save();R.credits()};
+ $('#exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='seedance-studio-backup.json';a.click()};
+ $('#imp').onchange=e=>{const f=e.target.files[0];f&&f.text().then(t=>{S=JSON.parse(t);save();toast('Imported');R.credits()})}};
+R.build();
+</script></body></html>
